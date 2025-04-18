@@ -1,19 +1,22 @@
 defmodule Jido.Signal.JournalTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Jido.Signal
   alias Jido.Signal.Journal
 
   setup do
     on_exit(fn ->
-      # Clean up any ETS adapter state
       if journal = Process.get(:current_journal) do
-        if journal.adapter == Jido.Signal.Journal.Adapters.ETS and
-             is_pid(journal.adapter_pid) and
-             Process.alive?(journal.adapter_pid) do
-          Jido.Signal.Journal.Adapters.ETS.cleanup(journal.adapter_pid)
-          Process.exit(journal.adapter_pid, :normal)
+        case journal.adapter do
+          Jido.Signal.Journal.Adapters.ETS ->
+            if is_pid(journal.adapter_pid) and Process.alive?(journal.adapter_pid) do
+              Jido.Signal.Journal.Adapters.ETS.cleanup(journal.adapter_pid)
+              Process.exit(journal.adapter_pid, :normal)
+            end
+          Jido.Signal.Journal.Adapters.InMemory ->
+            if Process.whereis(Jido.Signal.Journal.Adapters.InMemory) do
+              Agent.stop(Jido.Signal.Journal.Adapters.InMemory)
+            end
         end
-
         Process.delete(:current_journal)
       end
     end)

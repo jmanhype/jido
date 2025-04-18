@@ -46,7 +46,8 @@ defmodule Jido.Agent do
           vsn: "1.0.0",
           schema: [
             input: [type: :string, required: true],
-            status: [type: :atom, values: [:pending, :running, :complete]]
+            # Allowed values: :pending, :running, :complete
+            status: [type: :atom]
           ],
           actions: [MyAction1, MyAction2]
       end
@@ -665,7 +666,8 @@ defmodule Jido.Agent do
                 use Jido.Agent,
                   name: "my_agent",
                   schema: [
-                    status: [type: :atom, values: [:pending, :running]],
+                    # Allowed values: :pending, :running
+                    status: [type: :atom],
                     retries: [type: :integer, minimum: 0]
                   ]
 

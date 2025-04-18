@@ -277,19 +277,13 @@ defmodule Jido.Agent.Directive do
   end
 
   defp apply_single_directive(agent, instructions, opts) when is_list(instructions) do
-    # If all elements are instructions, convert each to Enqueue directive
-    if Enum.all?(instructions, &match?(%Instruction{}, &1)) do
-      instructions
-      |> Enum.map(&Enqueue.new/1)
-      |> Enum.reduce_while({:ok, agent}, fn directive, {:ok, current_agent} ->
-        case apply_single_directive(current_agent, directive, opts) do
-          {:ok, updated_agent} -> {:cont, {:ok, updated_agent}}
-          error -> {:halt, error}
-        end
-      end)
-    else
-      {:error, :invalid_directive}
-    end
+    # Apply each directive or instruction in order
+    Enum.reduce_while(instructions, {:ok, agent}, fn directive, {:ok, current_agent} ->
+      case apply_single_directive(current_agent, directive, opts) do
+        {:ok, updated_agent} -> {:cont, {:ok, updated_agent}}
+        error -> {:halt, error}
+      end
+    end)
   end
 
   defp apply_single_directive(agent, %Enqueue{} = directive, _opts) do
@@ -301,7 +295,16 @@ defmodule Jido.Agent.Directive do
         opts: directive.opts
       }
 
-      {:ok, %{agent | pending_instructions: :queue.in(instruction, agent.pending_instructions)}}
+      # Normalize existing pending_instructions into a queue
+      existing = Map.get(agent, :pending_instructions, nil)
+      pending_queue =
+        cond do
+          :queue.is_queue(existing) -> existing
+          is_list(existing)         -> :queue.from_list(existing)
+          true                      -> :queue.new()
+        end
+
+      {:ok, %{agent | pending_instructions: :queue.in(instruction, pending_queue)}}
     end
   end
 

@@ -125,7 +125,8 @@ defmodule JidoTest.TestAgents do
             optional_key: [type: :string]
           ]
         ],
-        enum_field: [type: :atom, values: [:one, :two, :three]],
+        # Allowed values: :one, :two, :three
+        enum_field: [type: :atom],
         list_field: [type: {:list, :string}]
       ]
   end
